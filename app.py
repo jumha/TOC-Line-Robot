@@ -154,7 +154,7 @@ def webhook_handler():
                 send_button_message(reply_token, temp)
                 machine[idx].correct()
                 continue
-            print(f"{bull_cow[0]} bulls, {bull_cow[1]} cows")
+            print(f"{bull_cow[0]}A{bull_cow[1]}B")
             
             machine[idx].choice -=1
             if machine[idx].choice <= 0:              
@@ -163,7 +163,7 @@ def webhook_handler():
                             alt_text='Buttons template',
                             template=ButtonsTemplate(
                                 title='遊戲結束',
-                                text=f"{bull_cow[0]} bulls, {bull_cow[1]} cows\n答案是 {str(machine[idx].num)} \n遊戲結束，你輸了！",
+                                text=f"{bull_cow[0]}A{bull_cow[1]}B\n答案是 {str(machine[idx].num)} \n遊戲結束，你輸了！",
                                 actions=[
                                     MessageTemplateAction(
                                         label='再玩一次',
@@ -180,7 +180,7 @@ def webhook_handler():
                 machine[idx].loss()
                 continue
             reply_token = event.reply_token
-            send_text_message(reply_token, f"{bull_cow[0]} bulls, {bull_cow[1]} cows\n你還有{machine[idx].choice}次機會")
+            send_text_message(reply_token, f"{bull_cow[0]}A{bull_cow[1]}B\n你還有{machine[idx].choice}次機會")
             machine[idx].wrong
         elif machine[idx].is_finish():
             if text.lower() == "再玩一次":
