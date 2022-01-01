@@ -11,11 +11,9 @@ from linebot.models import MessageEvent, TextMessage, TextSendMessage, TemplateS
 from fsm import TocMachine
 from utils import send_text_message, send_button_message
 
-from graphviz import Graph, Digraph
-
 load_dotenv()
 
-machine = TocMachine()
+#machine = TocMachine()
 
 app = Flask(__name__, static_url_path="")
 
@@ -23,6 +21,9 @@ game = {
     'choice': 8,
     'num': 1234
 }
+user_id = []
+machine = []
+draw_machine = TocMachine('draw')
 
 # get channel_secret and channel_access_token from your environment variable
 channel_secret = os.getenv("LINE_CHANNEL_SECRET", None)
@@ -65,35 +66,6 @@ def callback():
     return "OK"
 
 
-@app.route("/webhook1", methods=["POST"])
-def webhook_handler1():
-    signature = request.headers["X-Line-Signature"]
-    # get request body as text
-    body = request.get_data(as_text=True)
-    app.logger.info(f"Request body: {body}")
-
-    # parse webhook body
-    try:
-        events = parser.parse(body, signature)
-    except InvalidSignatureError:
-        abort(400)
-
-    # if event is MessageEvent and message is TextMessage, then echo text
-    for event in events:
-        if not isinstance(event, MessageEvent):
-            continue
-        if not isinstance(event.message, TextMessage):
-            continue
-        if not isinstance(event.message.text, str):
-            continue
-        print(f"\nFSM STATE: {machine.state}")
-        print(f"REQUEST BODY: \n{body}")
-        response = machine.advance(event)
-        if response == False:
-            send_text_message(event.reply_token, "Not Entering any State")
-
-    return "OK"
-
 @app.route("/webhook", methods=["POST"])
 
 def webhook_handler():
@@ -111,46 +83,56 @@ def webhook_handler():
 
     # if event is MessageEvent and message is TextMessage, then echo text
     for event in events:
+        userId = event.source.user_id
+        print(userId)
+        if not userId in user_id:
+            user_id.append(userId)
+            machine.append(TocMachine(userId))
+        idx = user_id.index(userId)
+
         if not isinstance(event, MessageEvent):
             continue
         if not isinstance(event.message, TextMessage):
             continue
         if not isinstance(event.message.text, str):
             continue
-        print(f"\nFSM STATE: {machine.state}")
+        print(f"\nFSM STATE: {machine[idx].state}")
         print(f"REQUEST BODY: \n{body}")
         text = event.message.text
-        if machine.is_initial():
-            game["num"] = bullCow.generateNum()
-            game["choice"] = 8
-            reply_token = event.reply_token
-            send_text_message(reply_token, "輸入「新遊戲」即可開始進行遊戲")
+        if machine[idx].is_initial():
+            machine[idx].num = bullCow.generateNum()
+            machine[idx].choice = 8
+           # reply_token = event.reply_token
+            #send_text_message(reply_token, "輸入「新遊戲」即可開始進行遊戲")
             
             
-            machine.start(event)
-        elif machine.is_gaming():
-            
+            if machine[idx].start(event):
+                reply_token = event.reply_token
+                send_text_message(reply_token, "遊戲開始，總共有8次機會\n請輸入四位數")
+        elif machine[idx].is_gaming():   
             if text.lower() == "結束遊戲":
                 reply_token = event.reply_token
-                send_text_message(reply_token, [f"答案是 {str(game['num'])} \n遊戲結束，你輸了！", "輸入「新遊戲」即可開始進行遊戲"])
-                machine.quit()
+                send_text_message(reply_token, f"答案是 {str(machine[idx].num)} \n遊戲結束，你輸了！ \n 輸入「新遊戲」即可開始進行遊戲")
+                machine[idx].quit()
                 continue
             if not text.lower().isdigit():
+                reply_token = event.reply_token
+                send_text_message(reply_token, "請輸入數字")
                 continue
             guess = int(text)
             if not bullCow.noDuplicates(guess):
                 print("Number should not have repeated digits. Try again.")
                 reply_token = event.reply_token
                 send_text_message(reply_token, "Number should not have repeated digits. Try again.")
-                machine.wrong(game["choice"])
+                machine[idx].wrong()
                 continue
             if guess < 1000 or guess > 9999:
                 print("Enter 4 digit number only. Try again.")
                 reply_token = event.reply_token
                 send_text_message(reply_token, "Enter 4 digit number only. Try again.")
-                machine.wrong(game["choice"])
+                machine[idx].wrong()
                 continue
-            bull_cow = bullCow.numOfBullsCows(game["num"],guess)
+            bull_cow = bullCow.numOfBullsCows(machine[idx].num,guess)
             if bull_cow[0] == 4:
                 print("You guessed right!")
                 reply_token = event.reply_token
@@ -173,57 +155,57 @@ def webhook_handler():
                         )
                 
                 send_button_message(reply_token, temp)
-                machine.correct()
+                machine[idx].correct()
                 continue
             print(f"{bull_cow[0]} bulls, {bull_cow[1]} cows")
             
-            game["choice"] -=1
-            if game["choice"] <= 0:              
+            machine[idx].choice -=1
+            if machine[idx].choice <= 0:              
                 reply_token = event.reply_token
                 temp = TemplateSendMessage(
                             alt_text='Buttons template',
                             template=ButtonsTemplate(
                                 title='Menu',
-                                text=f"{bull_cow[0]} bulls, {bull_cow[1]} cows\n答案是 {str(game['num'])} \n遊戲結束，你輸了！",
+                                text=f"{bull_cow[0]} bulls, {bull_cow[1]} cows\n答案是 {str(machine[idx].num)} \n遊戲結束，你輸了！",
                                 actions=[
                                     MessageTemplateAction(
                                         label='重新開始遊戲',
-                                        text='重新開始遊戲'
+                                        text="重新開始遊戲"
                                     ),
                                     MessageTemplateAction(
                                         label='結束遊戲',
-                                        text='結束遊戲'
+                                        text="結束遊戲"
                                     ),
                                 ]
                             )
                         )
-                
                 send_button_message(reply_token, temp)
-                machine.wrong(game["choice"])
+                machine[idx].loss()
                 continue
             reply_token = event.reply_token
             send_text_message(reply_token, f"{bull_cow[0]} bulls, {bull_cow[1]} cows")
-        elif machine.is_finish():
+            machine[idx].wrong
+        elif machine[idx].is_finish():
             if text.lower() == "重新開始遊戲":
-                game["num"] = bullCow.generateNum()
-                game["choice"] = 8
+                machine[idx].num = bullCow.generateNum()
+                machine[idx].choice = 8
                 reply_token = event.reply_token
                 send_text_message(reply_token, "重新開始遊戲")
-                machine.restart()
+                machine[idx].restart()
             elif text.lower() == "結束遊戲":
                 reply_token = event.reply_token
                 send_text_message(reply_token, "結束遊戲\n輸入「新遊戲」即可開始進行遊戲")
-                machine.quit(event)
+                machine[idx].quit()
 
     return "OK"
 
 
 @app.route("/show-fsm", methods=["GET"])
 def show_fsm():
-    machine.get_graph().draw("fsm.png", prog="dot", format="png")
+    draw_machine.get_graph().draw("fsm.png", prog="dot", format="png")
     return send_file("fsm.png", mimetype="image/png")
 
 
 if __name__ == "__main__":
-    port = os.environ.get("PORT", 8000)
-    app.run(host="0.0.0.0", port=port, debug=True)
+    PORT = os.environ['PORT']
+    app.run(host="0.0.0.0", port=PORT, debug=True)
