@@ -202,8 +202,8 @@ def webhook_handler():
 
 @app.route("/show-fsm", methods=["GET"])
 def show_fsm():
-    draw_machine.get_graph().draw("fsm.PNG", prog="dot")
-    return send_file("fsm.PNG", mimetype="image/png")
+    draw_machine.get_graph().draw("fsm.svg", prog="dot")
+    return send_file("fsm.svg", mimetype="image/svg")
 
 
 if __name__ == "__main__":
