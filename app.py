@@ -105,7 +105,7 @@ def webhook_handler():
             
             if machine[idx].start(event):
                 reply_token = event.reply_token
-                send_text_message(reply_token, "遊戲開始，總共有8次機會，\n請輸入四位數，數字不重複")
+                send_text_message(reply_token, "遊戲開始，總共有8次機會\n請輸入四位數，數字不重複")
         elif machine[idx].is_gaming():   
             if text.lower() == "結束遊戲":
                 reply_token = event.reply_token
@@ -126,7 +126,7 @@ def webhook_handler():
             if guess < 1000 or guess > 9999:
                 print("請輸入四位數就好，請再輸入一次:")
                 reply_token = event.reply_token
-                send_text_message(reply_token, "請輸入四位數就好，再輸入一次:")
+                send_text_message(reply_token, "輸入四位數就好，請再輸入一次:")
                 machine[idx].wrong()
                 continue
             bull_cow = bullCow.numOfBullsCows(machine[idx].num,guess)
