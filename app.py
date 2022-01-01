@@ -101,14 +101,11 @@ def webhook_handler():
         text = event.message.text
         if machine[idx].is_initial():
             machine[idx].num = bullCow.generateNum()
-            machine[idx].choice = 8
-           # reply_token = event.reply_token
-            #send_text_message(reply_token, "輸入「新遊戲」即可開始進行遊戲")
-            
+            machine[idx].choice = 8            
             
             if machine[idx].start(event):
                 reply_token = event.reply_token
-                send_text_message(reply_token, "遊戲開始，總共有8次機會\n請輸入四位數")
+                send_text_message(reply_token, "遊戲開始，總共有8次機會，\n請輸入四位數，數字不重複")
         elif machine[idx].is_gaming():   
             if text.lower() == "結束遊戲":
                 reply_token = event.reply_token
@@ -117,19 +114,19 @@ def webhook_handler():
                 continue
             if not text.lower().isdigit():
                 reply_token = event.reply_token
-                send_text_message(reply_token, "請輸入數字")
+                send_text_message(reply_token, "輸入數字0-9，請再輸入一次:")
                 continue
             guess = int(text)
             if not bullCow.noDuplicates(guess):
                 print("Number should not have repeated digits. Try again.")
                 reply_token = event.reply_token
-                send_text_message(reply_token, "Number should not have repeated digits. Try again.")
+                send_text_message(reply_token, "數字不要重複，請再輸入一次:")
                 machine[idx].wrong()
                 continue
             if guess < 1000 or guess > 9999:
-                print("Enter 4 digit number only. Try again.")
+                print("請輸入四位數就好，請再輸入一次:")
                 reply_token = event.reply_token
-                send_text_message(reply_token, "Enter 4 digit number only. Try again.")
+                send_text_message(reply_token, "請輸入四位數就好，再輸入一次:")
                 machine[idx].wrong()
                 continue
             bull_cow = bullCow.numOfBullsCows(machine[idx].num,guess)
@@ -139,12 +136,12 @@ def webhook_handler():
                 temp = TemplateSendMessage(
                             alt_text='Buttons template',
                             template=ButtonsTemplate(
-                                title='Menu',
+                                title='遊戲結束',
                                 text=f"{bull_cow[0]} bulls, {bull_cow[1]} cows\n賓果，答對了！！",
                                 actions=[
                                     MessageTemplateAction(
-                                        label='重新開始遊戲',
-                                        text='重新開始遊戲'
+                                        label='再玩一次',
+                                        text='再玩一次'
                                     ),
                                     MessageTemplateAction(
                                         label='結束遊戲',
@@ -165,12 +162,12 @@ def webhook_handler():
                 temp = TemplateSendMessage(
                             alt_text='Buttons template',
                             template=ButtonsTemplate(
-                                title='Menu',
+                                title='遊戲結束',
                                 text=f"{bull_cow[0]} bulls, {bull_cow[1]} cows\n答案是 {str(machine[idx].num)} \n遊戲結束，你輸了！",
                                 actions=[
                                     MessageTemplateAction(
-                                        label='重新開始遊戲',
-                                        text="重新開始遊戲"
+                                        label='再玩一次',
+                                        text="再玩一次"
                                     ),
                                     MessageTemplateAction(
                                         label='結束遊戲',
@@ -183,14 +180,14 @@ def webhook_handler():
                 machine[idx].loss()
                 continue
             reply_token = event.reply_token
-            send_text_message(reply_token, f"{bull_cow[0]} bulls, {bull_cow[1]} cows")
+            send_text_message(reply_token, f"{bull_cow[0]} bulls, {bull_cow[1]} cows\n你還有{machine[idx].choice}次機會")
             machine[idx].wrong
         elif machine[idx].is_finish():
-            if text.lower() == "重新開始遊戲":
+            if text.lower() == "再玩一次":
                 machine[idx].num = bullCow.generateNum()
                 machine[idx].choice = 8
                 reply_token = event.reply_token
-                send_text_message(reply_token, "重新開始遊戲")
+                send_text_message(reply_token, "遊戲開始，總共有8次機會\n請輸入四位數，數字不重複")
                 machine[idx].restart()
             elif text.lower() == "結束遊戲":
                 reply_token = event.reply_token
