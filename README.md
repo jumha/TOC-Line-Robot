@@ -78,4 +78,4 @@ Every time `initial` state is triggered by `start` to `gaming` state. Then, it w
 
 ## Deploy
 
-Setting to deploy webhooks on Heroku.https://github.com/line/line-bot-sdk-python/tree/master/examples/flask-echo)
+Setting to deploy webhooks on Heroku.
